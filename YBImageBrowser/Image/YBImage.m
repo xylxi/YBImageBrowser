@@ -174,9 +174,10 @@ static CGFloat _NSStringPathScale(NSString *string) {
         // 🙄波儿菜：Determine whether should to decode.
         BOOL decodeForDisplay = YES;
         if (decodeDecision) {
+            /// 计算一下如果解码的话，需要的内存是否大于指定的值，如果大于了，那么就不要解码了，避免内存消耗太大了，一下子
             decodeForDisplay = decodeDecision(CGSizeMake(decoder.width, decoder.height), decoder.scale ?: 1);
         }
-        
+        /// 获取首帧图片
         YYImageFrame *frame = [decoder frameAtIndex:0 decodeForDisplay:decodeForDisplay];
         UIImage *image = frame.image;
         if (!image) return nil;
@@ -184,8 +185,11 @@ static CGFloat _NSStringPathScale(NSString *string) {
         if (!self) return nil;
         _animatedImageType = decoder.type;
         if (decoder.frameCount > 1) {
+            /// 如果是动态如，那么保存这些数据
             _decoder = decoder;
+            /// 每帧大小
             _bytesPerFrame = CGImageGetBytesPerRow(image.CGImage) * CGImageGetHeight(image.CGImage);
+            /// gif 总大小
             _animatedImageMemorySize = _bytesPerFrame * decoder.frameCount;
         }
         self.yy_isDecodedForDisplay = YES;

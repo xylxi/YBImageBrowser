@@ -26,7 +26,11 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.navigationItem.title = @"YBImageBrowser";
-    _controllers = @[TestAController.self, TestBController.self, TestCController.self, TestDController.self, TestEController.self];
+    _controllers = @[TestAController.self,
+                     TestBController.self,
+                     TestCController.self,
+                     TestDController.self,
+                     TestEController.self];
     [self.view addSubview:self.tableView];
 }
 

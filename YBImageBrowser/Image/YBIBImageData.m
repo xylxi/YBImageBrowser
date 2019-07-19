@@ -33,6 +33,7 @@ static dispatch_queue_t YBIBImageProcessingQueue(void) {
     __weak id _downloadToken;
     YBIBSentinel *_cuttingSentinel;
     /// Stop processing tasks when in freeze.
+    /// 冻结,用于 delegate 为 nil 的时候，能够提前结束工作
     BOOL _freezing;
 }
 
@@ -82,6 +83,7 @@ static dispatch_queue_t YBIBImageProcessingQueue(void) {
     } else if (self.image) {
         [self loadImageBlock];
     } else if (self.imageURL) {
+        /// 如果有 imageURL，那么展示缩略图，可以是上个界面传递进来的，然后在请求高清图
         [self loadThumbImage];
         [self loadURL];
     } else if (self.imagePHAsset) {
@@ -92,15 +94,17 @@ static dispatch_queue_t YBIBImageProcessingQueue(void) {
     }
 }
 
+/// 将图片获取后设置给代理
 - (void)loadOriginImage {
     if (_freezing) return;
     if (!self.originImage) return;
-    
+    /// 判读图片是否需要压缩?
     if ([self shouldCompress]) {
-        if (self.compressedImage) {
+        if (self.compressedImage) { /// 如果有压缩的图片，直接返回
             [self.delegate yb_imageData:self readyForCompressedImage:self.compressedImage];
         } else {
-            [self loadThumbImage];
+            [self loadThumbImage]; /// 这个部分是不是多余了
+            /// 对原图片(没有解码的)进行压缩处理
             [self loadOriginImage_compress];
         }
     } else {
@@ -113,15 +117,18 @@ static dispatch_queue_t YBIBImageProcessingQueue(void) {
     
     self.loadingStatus = YBIBImageLoadingStatusCompressing;
     __weak typeof(self) wSelf = self;
+    /// 计算压缩到的 size
     CGSize size = [self bestSizeOfCompressing];
-
-    YBIB_DISPATCH_ASYNC(YBIBImageProcessingQueue(), ^{
+    
+    dispatch_async(YBIBImageProcessingQueue(), ^{
         if (self->_freezing) {
             self.loadingStatus = YBIBImageLoadingStatusNone;
             return;
         }
         // Ensure the best display effect.
+        // 开始压缩
         UIGraphicsBeginImageContextWithOptions(size, NO, UIScreen.mainScreen.scale);
+        /// 将没有解压的 originImage 绘制到指定的大小区域
         [self.originImage drawInRect:CGRectMake(0, 0, size.width, size.height)];
         if (self->_freezing) {
             UIGraphicsEndImageContext();
@@ -144,7 +151,7 @@ static dispatch_queue_t YBIBImageProcessingQueue(void) {
                 [self.delegate yb_imageData:self readyForCompressedImage:self.compressedImage];
             }];
         })
-    })
+    });
 }
 
 - (void)loadYBImage {
@@ -228,7 +235,7 @@ static dispatch_queue_t YBIBImageProcessingQueue(void) {
 - (void)loadURL_queryCache {
     if (_freezing) return;
     if (!self.imageURL || self.imageURL.absoluteString.length == 0) return;
-    
+    // 是否要进行解码的判断block
     YBImageDecodeDecision decision = [self defaultDecodeDecision];
     
     self.loadingStatus = YBIBImageLoadingStatusQuerying;
@@ -236,6 +243,7 @@ static dispatch_queue_t YBIBImageProcessingQueue(void) {
         if (!imageData || imageData.length == 0) {
             YBIB_DISPATCH_ASYNC_MAIN(^{
                 self.loadingStatus = YBIBImageLoadingStatusNone;
+                /// 去下载图片
                 [self loadURL_download];
             })
             return;
@@ -368,6 +376,7 @@ static dispatch_queue_t YBIBImageProcessingQueue(void) {
 
 #pragma mark - internal
 
+/// 高清展示需要显示的部分
 - (void)cuttingImageToRect:(CGRect)rect complete:(void (^)(UIImage * _Nullable))complete {
     if (_freezing) return;
     if (!self.originImage) return;
@@ -484,6 +493,7 @@ static dispatch_queue_t YBIBImageProcessingQueue(void) {
     return CGSizeMake(rWidth, rHeight);
 }
 
+// 如果目标的图片数据太大了，解码会消耗过大的内存，那么不返回 NO
 - (YBImageDecodeDecision)defaultDecodeDecision {
     __weak typeof(self) wSelf = self;
     return ^BOOL(CGSize imageSize, CGFloat scale) {

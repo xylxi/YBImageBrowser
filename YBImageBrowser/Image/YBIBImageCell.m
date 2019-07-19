@@ -46,6 +46,7 @@
 }
 
 - (void)prepareForReuse {
+    /// cell 被复用以后，将代理置空，防止 data 获取到图片后，设置图片
     ((YBIBImageData *)self.yb_cellData).delegate = nil;
     [self.imageScrollView reset];
     [self hideTailoringImageView];
@@ -150,6 +151,7 @@
         [self performSelector:@selector(cuttingImage_) withObject:nil afterDelay:0.15];
     }
 }
+
 - (void)cuttingImage_ {
     YBIBImageData *data = self.yb_cellData;
     if (!data.originImage) return;
@@ -509,6 +511,7 @@
     return _imageScrollView;
 }
 
+/// 用于展示高清图
 - (UIImageView *)tailoringImageView {
     if (!_tailoringImageView) {
         _tailoringImageView = [UIImageView new];

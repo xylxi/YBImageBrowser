@@ -63,6 +63,7 @@
 #undef QUERY_CACHE_FAILED
     
     // 'NSData' of image must be read to ensure decoding correctly.
+    // 如果image有缓存，强制的读取磁盘中的缓存，获取到 data，
     SDImageCacheOptions options = SDImageCacheQueryMemoryData | SDImageCacheAvoidDecodeImage;
     [[SDImageCache sharedImageCache] queryCacheOperationForKey:cacheKey options:options done:^(UIImage * _Nullable image, NSData * _Nullable data, SDImageCacheType cacheType) {
         if (completed) completed(image, data);

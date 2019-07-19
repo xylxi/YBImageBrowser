@@ -258,6 +258,9 @@
     }
 }
 
+/**
+ * 这里是为每个实现方法的对象添加实现
+ */
 - (void)implementGetBaseInfoProtocol:(id<YBIBGetBaseInfoProtocol>)obj {
     __weak typeof(self) wSelf = self;
     if ([obj respondsToSelector:@selector(setYb_currentOrientation:)]) {
